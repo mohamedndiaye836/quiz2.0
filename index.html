@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <title>Quiz</title>
+  <style>
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      background: linear-gradient(135deg, #667eea, #764ba2);
+      color: #fff;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+      margin: 0;
+    }
+
+    #container {
+      background: #2d2f3f;
+      padding: 30px;
+      border-radius: 15px;
+      box-shadow: 0 10px 25px rgba(0,0,0,0.3);
+      width: 90%;
+      max-width: 700px;
+      animation: fadeIn 1s ease-in-out;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(20px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    h1 {
+      text-align: center;
+      margin-bottom: 20px;
+    }
+
+    .question {
+      font-size: 1.2em;
+      margin-bottom: 20px;
+    }
+
+    .answers button {
+      display: block;
+      width: 100%;
+      padding: 12px;
+      margin: 8px 0;
+      border: none;
+      border-radius: 8px;
+      font-size: 1em;
+      cursor: pointer;
+      transition: background-color 0.3s;
+      background-color: #4a5568;
+      color: white;
+    }
+
+    .answers button:hover {
+      background-color: #5a67d8;
+    }
+
+    .correct {
+      background-color: #38a169 !important;
+    }
+
+    .wrong {
+      background-color: #e53e3e !important;
+    }
+
+    #timer {
+      text-align: right;
+      font-size: 1.1em;
+      margin-bottom: 15px;
+      color: #ffdd57;
+    }
+
+    #correction {
+      text-align: center;
+      font-weight: bold;
+      margin-top: 10px;
+    }
+
+    #score {
+      font-size: 1.5em;
+      text-align: center;
+      margin-top: 30px;
+    }
+
+    #retry {
+      display: none;
+      margin: 20px auto 0;
+      padding: 10px 20px;
+      font-size: 1em;
+      border: none;
+      border-radius: 8px;
+      background-color: #3182ce;
+      color: white;
+      cursor: pointer;
+    }
+
+    #retry:hover {
+      background-color: #2b6cb0;
+    }
+  </style>
+</head>
+<body>
+
+  <div id="container">
+    <h1>Quiz 20 questions</h1>
+    <div id="timer">Temps restant : <span id="time">15</span> sec</div>
+    <div class="question" id="question"></div>
+    <div class="answers" id="answers"></div>
+    <div id="correction"></div>
+    <div id="score"></div>
+    <button id="retry" onclick="restartQuiz()">Rejouer</button>
+  </div>
+
+  <script>
+    const questions = [
+      { question: "Quelle est la capitale de la France ?", options: ["Paris", "Lyon", "Nice", "Marseille"], correct: "Paris" },
+      { question: "Combien font 6 × 7 ?", options: ["42", "36", "48", "40"], correct: "42" },
+      { question: "Quel langage est utilisé pour créer des pages web ?", options: ["Python", "HTML", "Java", "C++"], correct: "HTML" },
+      { question: "Quel est l’océan le plus grand ?", options: ["Atlantique", "Arctique", "Indien", "Pacifique"], correct: "Pacifique" },
+      { question: "En quelle année a eu lieu la Révolution française ?", options: ["1789", "1799", "1804", "1776"], correct: "1789" },
+      { question: "Quel est le symbole chimique de l’eau ?", options: ["HO", "OH", "H2O", "O2H"], correct: "H2O" },
+      { question: "Combien y a-t-il de continents ?", options: ["5", "6", "7", "8"], correct: "7" },
+      { question: "Quelle est la planète la plus proche du soleil ?", options: ["Venus", "Terre", "Mercure", "Mars"], correct: "Mercure" },
+      { question: "Qui a écrit *Les Misérables* ?", options: ["Zola", "Victor Hugo", "Molière", "Balzac"], correct: "Victor Hugo" },
+      { question: "Quel est le résultat de 10² ?", options: ["20", "100", "10", "50"], correct: "100" },
+      { question: "Quelle est la langue officielle du Brésil ?", options: ["Espagnol", "Français", "Portugais", "Anglais"], correct: "Portugais" },
+      { question: "Quelle est la formule de l’air ?", options: ["CO2", "H2O", "O2", "Aucune de ces réponses"], correct: "Aucune de ces réponses" },
+      { question: "Dans quel pays se trouve la Tour Eiffel ?", options: ["Espagne", "Italie", "France", "Belgique"], correct: "France" },
+      { question: "Qui a peint La Joconde ?", options: ["Van Gogh", "Picasso", "Léonard de Vinci", "Monet"], correct: "Léonard de Vinci" },
+      { question: "Quel est le plus long fleuve du monde ?", options: ["Nil", "Amazon", "Yangtsé", "Mississippi"], correct: "Amazon" },
+      { question: "Quel est l’élément chimique dont le symbole est Fe ?", options: ["Fer", "Fluor", "Phosphore", "Francium"], correct: "Fer" },
+      { question: "Que signifie 'HTML' ?", options: ["HyperText Markup Language", "HighText Machine Language", "Home Tool Markup Language", "Hyper Transfer Markup Language"], correct: "HyperText Markup Language" },
+      { question: "Quel est le résultat de 25 ÷ 5 ?", options: ["4", "5", "6", "10"], correct: "5" },
+      { question: "Combien de côtés a un hexagone ?", options: ["5", "6", "7", "8"], correct: "6" },
+      { question: "Quelle est la monnaie du Japon ?", options: ["Yuan", "Won", "Yen", "Dollar"], correct: "Yen" }
+    ];
+
+    let current = 0;
+    let score = 0;
+    let timer;
+    let timeLeft = 15;
+
+    function startTimer() {
+      timeLeft = 15;
+      document.getElementById("time").textContent = timeLeft;
+      timer = setInterval(() => {
+        timeLeft--;
+        document.getElementById("time").textContent = timeLeft;
+        if (timeLeft === 0) {
+          clearInterval(timer);
+          showCorrection(null);
+        }
+      }, 1000);
+    }
+
+    function showQuestion() {
+      clearInterval(timer);
+      document.getElementById("correction").textContent = "";
+      const q = questions[current];
+      document.getElementById("question").textContent = q.question;
+      const answersDiv = document.getElementById("answers");
+      answersDiv.innerHTML = "";
+
+      q.options.forEach(option => {
+        const btn = document.createElement("button");
+        btn.textContent = option;
+        btn.onclick = () => {
+          clearInterval(timer);
+          showCorrection(option);
+        };
+        answersDiv.appendChild(btn);
+      });
+
+      startTimer();
+    }
+
+    function showCorrection(selected) {
+      const correctAnswer = questions[current].correct;
+      const buttons = document.querySelectorAll("#answers button");
+      buttons.forEach(btn => {
+        if (btn.textContent === correctAnswer) {
+          btn.classList.add("correct");
+        } else if (btn.textContent === selected) {
+          btn.classList.add("wrong");
+        }
+        btn.disabled = true;
+      });
+
+      const correction = selected === correctAnswer
+        ? "✅ Bonne réponse !"
+        : selected === null
+          ? "⏱ Temps écoulé !"
+          : "❌ Mauvaise réponse.";
+
+      if (selected === correctAnswer) score++;
+      document.getElementById("correction").textContent = correction;
+
+      setTimeout(() => {
+        current++;
+        if (current < questions.length) {
+          showQuestion();
+        } else {
+          showScore();
+        }
+      }, 2000);
+    }
+
+    function showScore() {
+      document.getElementById("question").style.display = "none";
+      document.getElementById("answers").style.display = "none";
+      document.getElementById("timer").style.display = "none";
+      document.getElementById("correction").style.display = "none";
+      document.getElementById("score").textContent = `🎉 Vous avez obtenu ${score} / ${questions.length} !`;
+      document.getElementById("retry").style.display = "block";
+    }
+
+    function restartQuiz() {
+      current = 0;
+      score = 0;
+      document.getElementById("question").style.display = "";
+      document.getElementById("answers").style.display = "";
+      document.getElementById("timer").style.display = "";
+      document.getElementById("correction").style.display = "";
+      document.getElementById("score").textContent = "";
+      document.getElementById("retry").style.display = "none";
+      showQuestion();
+    }
+
+    showQuestion();
+  </script>
+
+</body>
+</html>
+
